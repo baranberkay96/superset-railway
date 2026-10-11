@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Listing name | **Apache Superset 6 BI Dashboards** (version label `6` = Superset major; Superset tags releases without a `v`, e.g. `6.1.0`) |
-| Description | Explore data and build dashboards on any SQL database. Async workers and cache. (79 chars, unchanged — see note under Open questions) |
+| Description | BI dashboards on Postgres, MySQL, ClickHouse and more. Async workers. (79 chars, unchanged — see note under Open questions) |
 | Category | Analytics |
 | Tags | superset, bi, dashboards, analytics, sql, data-visualization |
 | Base market template | `superset` ("Apache Superset \| Open Source Tableau Alternative": web + worker + beat + Redis + Postgres). Kept its service split; replaced `:latest`, root user, base64 config and dev bootstrap scripts. Also reviewed `S7TBaH` (ju-li, most deployed, single container) and `c0hqeB` (leonardochappuis, default admin/admin). Both source repos have no license → nothing copied. |

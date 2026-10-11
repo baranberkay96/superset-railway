@@ -1,6 +1,6 @@
 {
   "name": "Apache Superset 6 BI Dashboards",
-  "description": "Explore data and build dashboards on any SQL database. Async workers and cache.",
+  "description": "BI dashboards on Postgres, MySQL, ClickHouse and more. Async workers.",
   "category": "Analytics",
   "tags": [
     "superset",

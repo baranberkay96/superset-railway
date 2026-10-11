@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Role launcher for Apache Superset on Railway.
+#
+#   superset-railway init     one-shot: db upgrade, create admin, superset init
+#   superset-railway web      gunicorn (UI + API)
+#   superset-railway worker   Celery worker (async SQL Lab, alerts & reports, thumbnails, cache warm-up)
+#   superset-railway beat     Celery beat (schedules reports)
+set -euo pipefail
+
+ROLE="${1:-}"
+log() { echo "[superset-railway] $*"; }
+die() { log "FATAL: $*" >&2; exit 78; }
+
+for name in SUPERSET_SECRET_KEY SUPERSET_DATABASE_URL SUPERSET_REDIS_URL; do
+  [ -n "${!name:-}" ] || die "variable ${name} is not set"
+done
+
+# Railway starts all services together; web/worker/beat wait until superset-init
+# has brought the metadata schema to the current Alembic head.
+wait_for_schema() {
+  local tries="${SUPERSET_SCHEMA_WAIT_TRIES:-90}" i=1
+  until superset db current 2>/dev/null | grep -q '(head)'; do
+    [ "${i}" -ge "${tries}" ] && die "metadata schema not at head after ${tries} checks; check superset-init logs"
+    log "waiting for superset-init to migrate the metadata database (${i}/${tries})"
+    i=$((i + 1))
+    sleep 10
+  done
+}
+
+case "${ROLE}" in
+  init)
+    [ -n "${SUPERSET_ADMIN_PASSWORD:-}" ] || die "SUPERSET_ADMIN_PASSWORD is not set"
+    attempt=1
+    until superset db upgrade; do
+      [ "${attempt}" -ge 12 ] && die "superset db upgrade failed ${attempt} times"
+      log "db upgrade failed (attempt ${attempt}); retrying in 10s"
+      attempt=$((attempt + 1))
+      sleep 10
+    done
+    # Idempotent: Flask-AppBuilder reports an existing user and exits 0.
+    superset fab create-admin \
+      --username "${SUPERSET_ADMIN_USERNAME:-admin}" \
+      --firstname "${SUPERSET_ADMIN_FIRSTNAME:-Superset}" \
+      --lastname "${SUPERSET_ADMIN_LASTNAME:-Admin}" \
+      --email "${SUPERSET_ADMIN_EMAIL:-admin@example.com}" \
+      --password "${SUPERSET_ADMIN_PASSWORD}"
+    superset init
+    log "init finished"
+    ;;
+  web)
+    wait_for_schema
+    exec /app/docker/entrypoints/run-server.sh
+    ;;
+  worker)
+    wait_for_schema
+    exec celery --app=superset.tasks.celery_app:app worker -O fair -l INFO \
+      --concurrency="${SUPERSET_CELERY_CONCURRENCY:-4}"
+    ;;
+  beat)
+    wait_for_schema
+    rm -f /tmp/celerybeat.pid
+    exec celery --app=superset.tasks.celery_app:app beat -l INFO \
+      --pidfile /tmp/celerybeat.pid --schedule /tmp/celerybeat-schedule
+    ;;
+  *)
+    die "unknown role '${ROLE}' (expected init|web|worker|beat)"
+    ;;
+esac

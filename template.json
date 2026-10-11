@@ -1,0 +1,390 @@
+{
+  "name": "Apache Superset 6 BI Dashboards",
+  "description": "Explore data and build dashboards on any SQL database. Async workers and cache.",
+  "category": "Analytics",
+  "tags": [
+    "superset",
+    "bi",
+    "dashboards",
+    "analytics",
+    "sql",
+    "data-visualization"
+  ],
+  "services": {
+    "superset": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apache-superset.svg",
+      "source": {
+        "repo": "baranberkay96/superset-railway",
+        "rootDirectory": "/services/superset"
+      },
+      "startCommand": "/usr/local/bin/superset-railway web",
+      "healthcheckPath": "/health",
+      "healthcheckTimeout": 900,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "publicDomain": true,
+      "targetPort": 8088,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "SUPERSET_DATABASE_URL": {
+          "defaultValue": "${{Postgres.DATABASE_URL}}",
+          "description": "Superset metadata database (Railway Postgres).",
+          "required": true
+        },
+        "SUPERSET_REDIS_URL": {
+          "defaultValue": "${{Redis.REDIS_URL}}",
+          "description": "Redis for Celery broker/results, caches and rate limiting (DBs 0-8).",
+          "required": true
+        },
+        "SUPERSET_ENV": {
+          "defaultValue": "production",
+          "description": "Production mode (enables rate limiting).",
+          "required": false
+        },
+        "SUPERSET_SECRET_KEY": {
+          "defaultValue": "${{secret(64, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Flask secret key; encrypts stored DB passwords. Shared by all Superset services. Never change after first boot.",
+          "required": true
+        },
+        "PORT": {
+          "defaultValue": "8088",
+          "description": "Gunicorn port (Railway healthcheck + domain).",
+          "required": false
+        },
+        "SUPERSET_PORT": {
+          "defaultValue": "8088",
+          "description": "Port read by the image's run-server.sh.",
+          "required": false
+        },
+        "SERVER_WORKER_AMOUNT": {
+          "defaultValue": "2",
+          "description": "Gunicorn worker processes.",
+          "required": false
+        },
+        "SERVER_THREADS_AMOUNT": {
+          "defaultValue": "20",
+          "description": "Threads per gunicorn worker.",
+          "required": false
+        },
+        "GUNICORN_TIMEOUT": {
+          "defaultValue": "120",
+          "description": "Request timeout (s); keep >= SUPERSET_WEBSERVER_TIMEOUT.",
+          "required": false
+        },
+        "SUPERSET_WEBSERVER_TIMEOUT": {
+          "defaultValue": "120",
+          "description": "Superset query timeout for synchronous requests (s).",
+          "required": false
+        },
+        "SUPERSET_PUBLIC_URL": {
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}/",
+          "description": "Public URL used in report/alert links.",
+          "required": false
+        },
+        "SUPERSET_ADMIN_USERNAME": {
+          "defaultValue": "admin",
+          "description": "Admin login created by superset-init.",
+          "required": true
+        },
+        "SUPERSET_ADMIN_PASSWORD": {
+          "defaultValue": "${{secret(24, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")}}",
+          "description": "Admin password (generated). Only applied when the admin is first created.",
+          "required": true
+        },
+        "SUPERSET_ADMIN_EMAIL": {
+          "defaultValue": "admin@example.com",
+          "description": "Admin email.",
+          "required": false
+        }
+      }
+    },
+    "superset-init": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apache-superset.svg",
+      "source": {
+        "repo": "baranberkay96/superset-railway",
+        "rootDirectory": "/services/superset"
+      },
+      "startCommand": "/usr/local/bin/superset-railway init",
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 5,
+      "numReplicas": 1,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "SUPERSET_DATABASE_URL": {
+          "defaultValue": "${{Postgres.DATABASE_URL}}",
+          "description": "Superset metadata database (Railway Postgres).",
+          "required": true
+        },
+        "SUPERSET_REDIS_URL": {
+          "defaultValue": "${{Redis.REDIS_URL}}",
+          "description": "Redis for Celery broker/results, caches and rate limiting (DBs 0-8).",
+          "required": true
+        },
+        "SUPERSET_ENV": {
+          "defaultValue": "production",
+          "description": "Production mode (enables rate limiting).",
+          "required": false
+        },
+        "SUPERSET_SECRET_KEY": {
+          "defaultValue": "${{superset.SUPERSET_SECRET_KEY}}",
+          "description": "Same value as on superset.",
+          "required": true
+        },
+        "SUPERSET_ADMIN_USERNAME": {
+          "defaultValue": "${{superset.SUPERSET_ADMIN_USERNAME}}",
+          "description": "Same value as on superset.",
+          "required": true
+        },
+        "SUPERSET_ADMIN_PASSWORD": {
+          "defaultValue": "${{superset.SUPERSET_ADMIN_PASSWORD}}",
+          "description": "Same value as on superset.",
+          "required": true
+        },
+        "SUPERSET_ADMIN_EMAIL": {
+          "defaultValue": "${{superset.SUPERSET_ADMIN_EMAIL}}",
+          "description": "Same value as on superset.",
+          "required": false
+        }
+      }
+    },
+    "superset-worker": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apache-superset.svg",
+      "source": {
+        "repo": "baranberkay96/superset-railway",
+        "rootDirectory": "/services/superset"
+      },
+      "startCommand": "/usr/local/bin/superset-railway worker",
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "SUPERSET_DATABASE_URL": {
+          "defaultValue": "${{Postgres.DATABASE_URL}}",
+          "description": "Superset metadata database (Railway Postgres).",
+          "required": true
+        },
+        "SUPERSET_REDIS_URL": {
+          "defaultValue": "${{Redis.REDIS_URL}}",
+          "description": "Redis for Celery broker/results, caches and rate limiting (DBs 0-8).",
+          "required": true
+        },
+        "SUPERSET_ENV": {
+          "defaultValue": "production",
+          "description": "Production mode (enables rate limiting).",
+          "required": false
+        },
+        "SUPERSET_SECRET_KEY": {
+          "defaultValue": "${{superset.SUPERSET_SECRET_KEY}}",
+          "description": "Same value as on superset.",
+          "required": true
+        },
+        "SUPERSET_INSTALL_BROWSER": {
+          "defaultValue": "true",
+          "description": "Build ARG: install Playwright + Chromium in this service's image (report screenshots).",
+          "required": false
+        },
+        "SUPERSET_CELERY_CONCURRENCY": {
+          "defaultValue": "4",
+          "description": "Celery processes per worker replica.",
+          "required": false
+        },
+        "SUPERSET_WEBDRIVER_BASEURL": {
+          "defaultValue": "http://${{superset.RAILWAY_PRIVATE_DOMAIN}}:8088/",
+          "description": "Where the worker's headless browser loads dashboards (private network).",
+          "required": false
+        },
+        "SUPERSET_PUBLIC_URL": {
+          "defaultValue": "${{superset.SUPERSET_PUBLIC_URL}}",
+          "description": "Same value as on superset.",
+          "required": false
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "120",
+          "description": "Time running tasks get to finish on redeploy.",
+          "required": false
+        }
+      }
+    },
+    "superset-beat": {
+      "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apache-superset.svg",
+      "source": {
+        "repo": "baranberkay96/superset-railway",
+        "rootDirectory": "/services/superset"
+      },
+      "startCommand": "/usr/local/bin/superset-railway beat",
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "numReplicas": 1,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": null,
+      "variables": {
+        "SUPERSET_DATABASE_URL": {
+          "defaultValue": "${{Postgres.DATABASE_URL}}",
+          "description": "Superset metadata database (Railway Postgres).",
+          "required": true
+        },
+        "SUPERSET_REDIS_URL": {
+          "defaultValue": "${{Redis.REDIS_URL}}",
+          "description": "Redis for Celery broker/results, caches and rate limiting (DBs 0-8).",
+          "required": true
+        },
+        "SUPERSET_ENV": {
+          "defaultValue": "production",
+          "description": "Production mode (enables rate limiting).",
+          "required": false
+        },
+        "SUPERSET_SECRET_KEY": {
+          "defaultValue": "${{superset.SUPERSET_SECRET_KEY}}",
+          "description": "Same value as on superset.",
+          "required": true
+        }
+      }
+    },
+    "Postgres": {
+      "icon": "https://devicons.railway.app/i/postgresql.svg",
+      "source": {
+        "image": "ghcr.io/railwayapp-templates/postgres-ssl:18"
+      },
+      "startCommand": null,
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/var/lib/postgresql/data"
+      },
+      "variables": {
+        "PGDATA": {
+          "defaultValue": "/var/lib/postgresql/data/pgdata",
+          "description": "Location where the database will be initialized",
+          "required": true
+        },
+        "PGHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Railway Private Domain Name.",
+          "required": true
+        },
+        "PGPORT": {
+          "defaultValue": "5432",
+          "description": "Port to connect to Postgres.",
+          "required": true
+        },
+        "PGUSER": {
+          "defaultValue": "${{ POSTGRES_USER }}",
+          "description": "Required variable for Data panel",
+          "required": true
+        },
+        "PGDATABASE": {
+          "defaultValue": "${{POSTGRES_DB}}",
+          "description": "Required variable for the data panel.",
+          "required": true
+        },
+        "PGPASSWORD": {
+          "defaultValue": "${{POSTGRES_PASSWORD}}",
+          "description": "Required variable for Data panel",
+          "required": true
+        },
+        "POSTGRES_DB": {
+          "defaultValue": "railway",
+          "description": "Default database created when image is started.",
+          "required": true
+        },
+        "DATABASE_URL": {
+          "defaultValue": "postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{PGDATABASE}}",
+          "description": "URL to connect to Postgres database.",
+          "required": true
+        },
+        "POSTGRES_USER": {
+          "defaultValue": "postgres",
+          "description": "User to connect to Postgres DB",
+          "required": true
+        },
+        "SSL_CERT_DAYS": {
+          "defaultValue": "820",
+          "description": "SSL certificate expiry in days.",
+          "required": false
+        },
+        "POSTGRES_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Password to connect to DB",
+          "required": true
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "defaultValue": "60",
+          "description": "Allow Postgres to cleanly shut down",
+          "required": true
+        }
+      }
+    },
+    "Redis": {
+      "icon": "https://cdn.sanity.io/images/sy1jschh/production/0ce0bfdcfbdbf69662b1116671f97c2dd788b655-157x157.svg",
+      "source": {
+        "image": "redis:8.2"
+      },
+      "startCommand": "/bin/sh -c \"rm -rf $RAILWAY_VOLUME_MOUNT_PATH/lost+found/ && exec docker-entrypoint.sh redis-server --requirepass $REDIS_PASSWORD --save 60 1 --dir $RAILWAY_VOLUME_MOUNT_PATH\"",
+      "healthcheckPath": null,
+      "healthcheckTimeout": null,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10,
+      "publicDomain": false,
+      "targetPort": null,
+      "tcpProxy": null,
+      "volume": {
+        "mountPath": "/data"
+      },
+      "variables": {
+        "REDISHOST": {
+          "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+          "description": "Private network hostname of the Redis service, only resolvable from services in the same environment",
+          "required": true
+        },
+        "REDISPORT": {
+          "defaultValue": "6379",
+          "description": "Port that Redis listens on",
+          "required": true
+        },
+        "REDISUSER": {
+          "defaultValue": "default",
+          "description": "Username for authenticating with Redis",
+          "required": true
+        },
+        "REDIS_URL": {
+          "defaultValue": "redis://${{ REDISUSER }}:${{ REDIS_PASSWORD }}@${{ REDISHOST }}:${{ REDISPORT }}",
+          "description": "Connection string for connecting to Redis using the private network",
+          "required": true
+        },
+        "REDISPASSWORD": {
+          "defaultValue": "${{REDIS_PASSWORD}}",
+          "description": "Alias of REDIS_PASSWORD for clients that expect the unseparated name",
+          "required": true
+        },
+        "REDIS_PASSWORD": {
+          "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+          "description": "Randomly generated password for authenticating with Redis",
+          "required": true
+        }
+      }
+    }
+  },
+  "buckets": []
+}

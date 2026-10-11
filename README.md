@@ -1,5 +1,7 @@
 # Deploy and Host Apache Superset with Railway
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/apache-superset-6-bi-dashboards)
+
 Apache Superset is an open-source business intelligence platform for exploring data, writing SQL and building interactive dashboards. This community template runs Superset 6 on Railway with a Postgres metadata database, Redis caching, Celery workers for asynchronous queries and scheduled reports, and drivers for Postgres, MySQL and ClickHouse.
 
 ## About Hosting Apache Superset

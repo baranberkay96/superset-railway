@@ -132,3 +132,7 @@ Pinned 2026-10-10: `apache/superset:6.1.0`, `psycopg2-binary 2.9.9`, `mysqlclien
 - Not deployed end-to-end here. Points to check on first deploy: `mysqlclient` build in the lean image (uses Superset's own `pip-install.sh --requires-build-essential`), Playwright `install-deps` on the trixie base, and that Railway passes `SUPERSET_INSTALL_BROWSER` as build ARG to the worker only.
 - Listing copy says "on any SQL database": Superset supports any SQLAlchemy dialect, but this template ships three drivers; others need one line in the Dockerfile (documented). Wording kept; consider "on Postgres, MySQL, ClickHouse and more" if reviewers object.
 - Building one Dockerfile four times (one per service) lengthens the first deploy; Railway caches layers per service afterwards.
+
+## Deploy test findings (2026-10-11)
+
+The web service waited for superset-init's migration and hit its healthcheck window before init (built later) finished. Fix: migration moved to a `migrate` role run as the web service's pre-deploy command; init now waits for the schema and only creates the admin and runs `superset init` (Alembic has no lock, so only one place migrates).

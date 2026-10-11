@@ -15,21 +15,22 @@ for name in SUPERSET_SECRET_KEY SUPERSET_DATABASE_URL SUPERSET_REDIS_URL; do
   [ -n "${!name:-}" ] || die "variable ${name} is not set"
 done
 
-# Railway starts all services together; web/worker/beat wait until superset-init
-# has brought the metadata schema to the current Alembic head.
+# Railway starts all services together; init/worker/beat wait until web's
+# pre-deploy migrate step has brought the metadata schema to the Alembic head.
 wait_for_schema() {
   local tries="${SUPERSET_SCHEMA_WAIT_TRIES:-90}" i=1
   until superset db current 2>/dev/null | grep -q '(head)'; do
-    [ "${i}" -ge "${tries}" ] && die "metadata schema not at head after ${tries} checks; check superset-init logs"
-    log "waiting for superset-init to migrate the metadata database (${i}/${tries})"
+    [ "${i}" -ge "${tries}" ] && die "metadata schema not at head after ${tries} checks; check the superset service pre-deploy logs"
+    log "waiting for the web pre-deploy migration to reach head (${i}/${tries})"
     i=$((i + 1))
     sleep 10
   done
 }
 
 case "${ROLE}" in
-  init)
-    [ -n "${SUPERSET_ADMIN_PASSWORD:-}" ] || die "SUPERSET_ADMIN_PASSWORD is not set"
+  migrate)
+    # web pre-deploy step: brings the schema to head before web's healthcheck
+    # clock starts. The only place that migrates (Alembic has no lock here).
     attempt=1
     until superset db upgrade; do
       [ "${attempt}" -ge 12 ] && die "superset db upgrade failed ${attempt} times"
@@ -37,6 +38,11 @@ case "${ROLE}" in
       attempt=$((attempt + 1))
       sleep 10
     done
+    log "migrate finished"
+    ;;
+  init)
+    [ -n "${SUPERSET_ADMIN_PASSWORD:-}" ] || die "SUPERSET_ADMIN_PASSWORD is not set"
+    wait_for_schema
     # Idempotent: Flask-AppBuilder reports an existing user and exits 0.
     superset fab create-admin \
       --username "${SUPERSET_ADMIN_USERNAME:-admin}" \

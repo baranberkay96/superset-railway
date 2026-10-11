@@ -98,7 +98,11 @@
           "description": "Admin email.",
           "required": false
         }
-      }
+      },
+      "preDeployCommand": [
+        "/usr/local/bin/superset-railway migrate"
+      ],
+      "preDeployTimeoutSeconds": 900
     },
     "superset-init": {
       "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/apache-superset.svg",
